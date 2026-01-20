@@ -16,3 +16,7 @@ def create_tables():
 @app.get("/")
 def read_root():
     return {"Duka FastAPI": "1.0"}
+
+# uvicorn main:app --reload
+# http://127.0.0.1:8000/docs
+    

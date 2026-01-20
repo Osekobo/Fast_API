@@ -1,9 +1,9 @@
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from sqlalchemy import String, Float, Integer, DateTime, create_engine
-# from typing import List
+from typing import List
 # from typing import Optional
-# from sqlalchemy import ForeignKey
-from sqlalchemy.orm import sessionmaker  # relationship
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 
 
@@ -39,6 +39,98 @@ class Product(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
     )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+
+class Sale(Base):
+    __tablename__ = "sales"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationship with SalesDetails
+    details: Mapped[List["SalesDetails"]] = relationship(
+        back_populates="sale",
+        cascade="all, delete-orphan"
+    )
+
+
+class SalesDetails(Base):
+    __tablename__ = "sales_details"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.id"), nullable=False
+    )
+
+    product_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+
+    # Relationship back to Sale
+    sale: Mapped["Sale"] = relationship(back_populates="details")
+
+
+class Purchase(Base):
+    __tablename__ = "purchases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
+
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id"), nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationship to Product
+    product: Mapped["Product"] = relationship(
+        back_populates="purchases"
+    )
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    name: Mapped[str] = mapped_column(String(256), nullable=False)
+
+    phone: Mapped[str] = mapped_column(
+        String(256), unique=True, nullable=False
+    )
+
+    email: Mapped[str] = mapped_column(
+        String(256), unique=True, nullable=False
+    )
+
+    password: Mapped[str] = mapped_column(
+        String(256), nullable=False
+    )  # hashed password
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
