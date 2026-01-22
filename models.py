@@ -3,7 +3,7 @@ from sqlalchemy import String, Float, Integer, DateTime, create_engine
 from typing import List
 # from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import relationship, Session
 from datetime import datetime
 
 
@@ -11,7 +11,7 @@ DATABASE_URL = "postgresql://postgres:12039@localhost:5432/flask_api"
 
 engine = create_engine(DATABASE_URL)
 
-SessionLocal = sessionmaker(
+SessionLocal = Session(
     autocommit=False,
     autoflush=False,
     bind=engine
@@ -42,8 +42,10 @@ class Product(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-
-
+    purchases: Mapped[List["Purchase"]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )
 
 class Sale(Base):
     __tablename__ = "sales"
@@ -103,9 +105,7 @@ class Purchase(Base):
     )
 
     # Relationship to Product
-    product: Mapped["Product"] = relationship(
-        back_populates="purchases"
-    )
+    product: Mapped["Product"] = relationship(back_populates="purchases")
 
 
 class User(Base):
