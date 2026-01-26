@@ -78,3 +78,13 @@ class PurchaseGetMap(PurchasePostMap):
 
 # class UserGetRegister(UserPostRegister):
 #     id: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: str | None = None
+    scopes: list[str] = []

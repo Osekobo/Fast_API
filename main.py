@@ -1,14 +1,18 @@
 # from typing import Union
 from sqlalchemy.orm import Session
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from models import Base, engine, Product, SessionLocal, Sale,  User, Purchase
-from jsonmap import ProductGetMap, SaleGetMap, UserGetRegister, PurchaseGetMap, SalePostMap, UserPostLogin, UserPostRegister
+from jsonmap import ProductGetMap, SaleGetMap, UserGetRegister, PurchaseGetMap, SalePostMap, UserPostLogin, UserPostRegister, Token
 from sqlalchemy import select
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import  check_password_hash
+from datetime import datetime, timedelta, timezone
+from myjwt import create_access_token, get_db
+from passlib.context import CryptContext
+
 
 
 app = FastAPI()
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 
 
 # create tables on startup
 
@@ -22,10 +26,12 @@ def create_tables():
 def read_root():
     return {"Duka FastAPI": "1.0"}
 
+def get_password_hash(password:str):
+    return pwd_context.hash(password)
 
 @app.post("/register", response_model=UserGetRegister)
-def register_user(user: UserPostRegister):
-    db = SessionLocal()
+def register_user(user: UserPostRegister, db:Session = Depends(get_db)):
+    # db = SessionLocal()
     # check email
     if db.scalar(select(User).where(User.email == user.email)):
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -36,29 +42,37 @@ def register_user(user: UserPostRegister):
         name=user.name,
         phone=user.phone,
         email=user.email,
-        password=generate_password_hash(user.password),
+        password=get_password_hash(user.password),
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-@app.post("/login")
-def login_user(user: UserPostLogin):
-    db = SessionLocal()
+@app.post("/login", response_model=Token)
+def login_user(user: UserPostLogin, db: Session = Depends(get_db)):
+    # db = SessionLocal()
     db_user = db.scalar(select(User).where(User.email == user.email))
     if not db_user:
         raise HTTPException(
             status_code=401, detail="Invalid email or password")
-    if not check_password_hash(db_user.password, user.password):
+    if not pwd_context.verify(user.password, db_user.password):
         raise HTTPException(
             status_code=401, detail="Invalid email or password")
-    return {
-        "message": "Login successful",
-        "user_id": db_user.id,
-        "email": db_user.email
-    }
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": db_user.email},
+        expires_delta=access_token_expires,
+    )
+    return Token(access_token=access_token, token_type="bearer")
+
+    # return {
+    #     "message": "Login successful",
+    #     "user_id": db_user.id,
+    #     "email": db_user.email
+    # }
 # ensure sessions close properly
 
 

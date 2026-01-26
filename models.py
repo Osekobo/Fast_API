@@ -7,7 +7,7 @@ from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
 
-DATABASE_URL = "postgresql://postgres:12039@localhost:5432/flask_api"
+DATABASE_URL = "postgresql://postgres:12039@localhost:5432/fast_api"
 
 engine = create_engine(DATABASE_URL)
 
