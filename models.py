@@ -3,7 +3,7 @@ from sqlalchemy import String, Float, Integer, DateTime, create_engine
 from typing import List
 # from typing import Optional
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy.orm import relationship, sessionmaker
 from datetime import datetime
 
 
@@ -11,7 +11,7 @@ DATABASE_URL = "postgresql://postgres:12039@localhost:5432/flask_api"
 
 engine = create_engine(DATABASE_URL)
 
-SessionLocal = Session(
+SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
@@ -112,25 +112,9 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
     name: Mapped[str] = mapped_column(String(256), nullable=False)
-
-    phone: Mapped[str] = mapped_column(
-        String(256), unique=True, nullable=False
-    )
-
-    email: Mapped[str] = mapped_column(
-        String(256), unique=True, nullable=False
-    )
-
-    password: Mapped[str] = mapped_column(
-        String(256), nullable=False
-    )  # hashed password
-
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
-
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    phone: Mapped[str] = mapped_column(String(256), unique=True,nullable=False)
+    email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(String(256), nullable=False)  # hashed password
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

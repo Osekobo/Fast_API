@@ -1,4 +1,25 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from datetime import datetime
+
+
+class UserPostRegister(BaseModel):
+    name: str
+    phone: str
+    email: EmailStr
+    # full_name: str | None = None
+    password: str
+
+
+class UserPostLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserGetRegister(BaseModel):
+    id: int
+    name: str
+    phone: str
+    email: EmailStr
 
 
 class ProductPostMap(BaseModel):
@@ -48,12 +69,12 @@ class PurchaseGetMap(PurchasePostMap):
     product: ProductGetMap
 
 
-class UserPostMap(BaseModel):
-    name: str
-    phone: str
-    email: str
-    password: str
+# class UserPostRegister(BaseModel):
+#     name: str | None = None
+#     phone: str
+#     email: str
+#     password: str
 
 
-class UserGetMap(UserPostMap):
-    id: int
+# class UserGetRegister(UserPostRegister):
+#     id: int
