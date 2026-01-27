@@ -92,6 +92,8 @@ def get_users(db: Session = Depends(get_db)):
 
 @app.get("/products", response_model=list[ProductGetMap])
 def get_products():
+    # current_user: Annotated[User, Depends(get_current_user)]
+    # print(f"{current_user.email}")
     prods = select(Product)
     return SessionLocal.scalars(prods)
 
