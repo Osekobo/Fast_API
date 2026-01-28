@@ -10,7 +10,6 @@ from myjwt import create_access_token, get_db
 from passlib.context import CryptContext
 
 
-
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30 
 

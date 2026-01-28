@@ -30,17 +30,14 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def verify_password(plain_password: str, hashed_password: str):
     return pwd_context.verify(plain_password, hashed_password)
 
-
 # def get_password_hash(password:str):
 #     return pwd_context.hash(password)
-
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="token",
     scopes={"me": "Read information about the current user.",
             "items": "Read items."},
 )
-
 
 # def verify_password(plain_password, hashed_password):
 #     return password_hash.verify(plain_password, hashed_password)
@@ -49,12 +46,10 @@ oauth2_scheme = OAuth2PasswordBearer(
 # def get_password_hash(password):
 #     return password_hash.hash(password)
 
-
 def get_user_by_email(db, email: str):
     if email in db:
         user_dict = db[email]
         return db.scalar(select(User).where(User.email == email))
-
 
 def authenticate_user(db: Session, email: str, plain_password: str):
     user = get_user_by_email(db, email)
@@ -83,7 +78,6 @@ for u in users:
         u.password = pwd_context.hash(u.password)
 db.commit()
 db.close()
-
 
 
 def get_db():

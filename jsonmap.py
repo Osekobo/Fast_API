@@ -6,7 +6,6 @@ class UserPostRegister(BaseModel):
     name: str
     phone: str
     email: EmailStr
-    # full_name: str | None = None
     password: str
 
 
