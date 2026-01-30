@@ -114,3 +114,19 @@ def create_sale(sale: SalePostMap, db: Session = Depends(get_db)):
 @app.get("/purchase", response_model=list[PurchaseGetMap])
 def get_purchases(db: Session = Depends(get_db)):
     return db.scalars(select(Purchase)).all()
+
+
+
+# ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
+# @router.post("/token", tags=["auth"])
+# def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
+#     user = authenticate_user(form_data.username, form_data.password)
+#     if not user:
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+#     token = create_access_token(user.email)
+#     return {
+#         "access_token": token,
+#         "token_type": "bearer",
+#     }
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")

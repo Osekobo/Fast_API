@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
-
 import jwt
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
@@ -9,7 +8,6 @@ from passlib.context import CryptContext
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-
 from models import SessionLocal, User
 from jsonmap import TokenData
 
