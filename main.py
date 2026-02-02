@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 from datetime import timedelta
-from models import Base, engine, Product, Sale, User, Purchase
+from models import Base, engine, Product, Sale, User, Purchase, SalesDetails
+from typing import List
 from jsonmap import (
     ProductGetMap,
     SaleGetMap,
@@ -11,6 +12,9 @@ from jsonmap import (
     UserPostRegister,
     UserPostLogin,
     PurchaseGetMap,
+    PurchasePostMap,
+    SalePerProductMap,
+    SaleDetailsItem,
     Token,
 )
 from myjwt import (
@@ -18,6 +22,7 @@ from myjwt import (
     get_password_hash,
     verify_password,
     create_access_token,
+    get_current_user,
 )
 
 app = FastAPI()
@@ -57,6 +62,8 @@ def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
     return new_user
 
 # Login
+
+
 @app.post("/login", response_model=Token)
 def login_user(user: UserPostLogin, db: Session = Depends(get_db)):
     db_user = db.scalar(select(User).where(User.email == user.email))
@@ -102,8 +109,20 @@ def get_sales(db: Session = Depends(get_db)):
 
 
 @app.post("/sales", response_model=SaleGetMap)
-def create_sale(sale: SalePostMap, db: Session = Depends(get_db)):
-    model = Sale(**sale.dict())
+def create_sale(
+    sale: SalePostMap,
+    db: Session = Depends(get_db)
+):
+    model = Sale()
+
+    for item in sale.details:
+        model.details.append(
+            SalesDetails(
+                product_id=item.product_id,
+                quantity=item.quantity
+            )
+        )
+
     db.add(model)
     db.commit()
     db.refresh(model)
@@ -115,6 +134,101 @@ def create_sale(sale: SalePostMap, db: Session = Depends(get_db)):
 def get_purchases(db: Session = Depends(get_db)):
     return db.scalars(select(Purchase)).all()
 
+
+@app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
+def create_purchase(
+    purchase: PurchasePostMap,
+    db: Session = Depends(get_db)
+):
+    new_purchase = Purchase(
+        quantity=purchase.quantity,
+        product_id=purchase.product_id
+    )
+
+    db.add(new_purchase)
+    db.commit()
+    db.refresh(new_purchase)
+
+    return new_purchase
+
+# Dashboard
+
+
+@app.get("/dashboard/spp", response_model=List[SalePerProductMap])
+def get_sales_per_product(
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
+):
+    sales_data = db.execute(
+        select(
+            SalesDetails.product_id,  # ✅ ORM model
+            Product.name.label("product_name"),
+            func.sum(SalesDetails.quantity).label("total_quantity_sold"),
+            func.sum(
+                SalesDetails.quantity * Product.selling_price
+            ).label("total_sales_amount")
+        )
+        .join(Product, SalesDetails.product_id == Product.id)
+        .join(Sale, SalesDetails.sale_id == Sale.id)
+        .group_by(SalesDetails.product_id, Product.name)
+    ).all()
+
+    return [
+        SalePerProductMap(
+            product_id=row.product_id,
+            product_name=row.product_name,
+            total_quantity_sold=row.total_quantity_sold,
+            total_sales_amount=row.total_sales_amount,
+        )
+        for row in sales_data
+    ]
+
+
+@app.get("/dashboard/rpp", response_model=List[SalePerProductMap])
+def get_remaining_per_product(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    purchased_subq = (
+        select(
+            Purchase.product_id.label("product_id"),
+            func.sum(Purchase.quantity).label("total_purchased")
+        )
+        .group_by(Purchase.product_id)
+        .subquery()
+    )
+
+    sold_subq = (
+        select(
+            SaleDetailsItem.product_id.label("product_id"),
+            func.sum(SaleDetailsItem.quantity).label("total_sold")
+        )
+        .group_by(SaleDetailsItem.product_id)
+        .subquery()
+    )
+
+    data = db.execute(
+        select(
+            Product.id.label("product_id"),
+            Product.name.label("product_name"),
+            (
+                func.coalesce(purchased_subq.c.total_purchased, 0)
+                - func.coalesce(sold_subq.c.total_sold, 0)
+            ).label("remaining_quantity")
+        )
+        .outerjoin(purchased_subq, Product.id == purchased_subq.c.product_id)
+        .outerjoin(sold_subq, Product.id == sold_subq.c.product_id)
+    ).all()
+
+    return [
+        SalePerProductMap(
+            product_id=row.product_id,
+            product_name=row.product_name,
+            total_quantity_sold=row.remaining_quantity,
+            total_sales_amount=0,  # not applicable here
+        )
+        for row in data
+    ]
 
 
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------

@@ -46,6 +46,7 @@ class Product(Base):
         cascade="all, delete-orphan"
     )
 
+
 class Sale(Base):
     __tablename__ = "sales"
 
@@ -69,16 +70,18 @@ class SalesDetails(Base):
     __tablename__ = "sales_details"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-
     sale_id: Mapped[int] = mapped_column(
         ForeignKey("sales.id"), nullable=False
     )
-
-    product_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
-
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id"), nullable=False
+    )
+    quantity: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
     # Relationship back to Sale
@@ -112,8 +115,13 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(256), nullable=False)
-    phone: Mapped[str] = mapped_column(String(256), unique=True,nullable=False)
-    email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
-    password: Mapped[str] = mapped_column(String(256), nullable=False)  # hashed password
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    phone: Mapped[str] = mapped_column(
+        String(256), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(256), unique=True, nullable=False)
+    password: Mapped[str] = mapped_column(
+        String(256), nullable=False)  # hashed password
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -35,6 +35,12 @@ class ProductGetMap(ProductPostMap):
     id: int
 
 
+class RemainingPerProductMap(BaseModel):
+    product_id: int
+    product_name: str
+    remaining_quantity: float
+
+
 class SaleDetailsItem(BaseModel):
     product_id: int
     quantity: float
@@ -48,14 +54,11 @@ class SaleGetMap(SalePostMap):
     id: int
 
 
-# class Products(BaseModel):
-#     name: str
-#     buying_price: float
-#     selling_price: float
-#     model: str
-#     year: int
-#     condition: str
-#     fuel: str
+class SalePerProductMap(BaseModel):
+    sale_id: int
+    product_id: int
+    quantity: float
+    created_at: datetime
 
 
 class PurchasePostMap(BaseModel):
@@ -65,7 +68,10 @@ class PurchasePostMap(BaseModel):
 
 class PurchaseGetMap(PurchasePostMap):
     id: int
-    product: ProductGetMap
+    quantity: float
+    product_id: int
+    created_at: datetime
+    updated_at: datetime
 
 
 # class UserPostRegister(BaseModel):
