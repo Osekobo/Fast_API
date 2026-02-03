@@ -74,17 +74,6 @@ class PurchaseGetMap(PurchasePostMap):
     updated_at: datetime
 
 
-# class UserPostRegister(BaseModel):
-#     name: str | None = None
-#     phone: str
-#     email: str
-#     password: str
-
-
-# class UserGetRegister(UserPostRegister):
-#     id: int
-
-
 class Token(BaseModel):
     access_token: str
     token_type: str
