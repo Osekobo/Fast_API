@@ -83,8 +83,6 @@ class SalesDetails(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-
-    # Relationship back to Sale
     sale: Mapped["Sale"] = relationship(back_populates="details")
 
 
