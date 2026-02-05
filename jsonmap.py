@@ -74,6 +74,35 @@ class PurchaseGetMap(PurchasePostMap):
     updated_at: datetime
 
 
+class SalesPerProductOut(BaseModel):
+    product_id: int
+    product_name: str
+    total_quantity_sold: int
+    total_sales_amount: float
+
+
+class RemainingPerProductOut(BaseModel):
+    product_id: int
+    product_name: str
+    remaining_quantity: int
+
+########################
+
+
+class ProfitPerProduct(BaseModel):
+    product_id: int
+    product_name: str
+    remaining_quantity: int
+
+########################
+
+
+class ProfitPerDay(BaseModel):
+    product_id: int
+    product_name: str
+    remaining_quantity: int
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str

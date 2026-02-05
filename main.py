@@ -13,8 +13,12 @@ from jsonmap import (
     UserPostLogin,
     PurchaseGetMap,
     PurchasePostMap,
-    SalePerProductMap,
-    SaleDetailsItem,
+    # SalePerProductMap,
+    # SaleDetailsItem,
+    SalesPerProductOut,
+    RemainingPerProductOut,
+    ProfitPerProduct,
+    ProfitPerDay,
     Token,
 )
 from myjwt import (
@@ -83,18 +87,27 @@ def login_user(user: UserPostLogin, db: Session = Depends(get_db)):
 
 # Users
 @app.get("/users", response_model=list[UserGetRegister])
-def get_users(db: Session = Depends(get_db)):
+def get_users(
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
+):
     return db.scalars(select(User)).all()
 
 
 # Products
 @app.get("/products", response_model=list[ProductGetMap])
-def get_products(db: Session = Depends(get_db)):
+def get_products(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return db.scalars(select(Product)).all()
 
 
 @app.post("/products", response_model=ProductGetMap)
-def create_product(product: ProductGetMap, db: Session = Depends(get_db)):
+def create_product(product: ProductGetMap,
+                   db: Session = Depends(get_db),
+                   #    current_user: User = Depends(get_current_user),
+                   ):
     model = Product(**product.dict())
     db.add(model)
     db.commit()
@@ -104,14 +117,18 @@ def create_product(product: ProductGetMap, db: Session = Depends(get_db)):
 
 # Sales
 @app.get("/sales", response_model=list[SaleGetMap])
-def get_sales(db: Session = Depends(get_db)):
+def get_sales(
+        db: Session = Depends(get_db),
+        # current_user: User = Depends(get_current_user),
+):
     return db.scalars(select(Sale)).all()
 
 
 @app.post("/sales", response_model=SaleGetMap)
 def create_sale(
     sale: SalePostMap,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
 ):
     model = Sale()
 
@@ -131,14 +148,18 @@ def create_sale(
 
 # Purchases
 @app.get("/purchase", response_model=list[PurchaseGetMap])
-def get_purchases(db: Session = Depends(get_db)):
+def get_purchases(
+        db: Session = Depends(get_db),
+        # current_user: User = Depends(get_current_user),
+):
     return db.scalars(select(Purchase)).all()
 
 
 @app.post("/purchase", response_model=PurchaseGetMap, status_code=201)
 def create_purchase(
     purchase: PurchasePostMap,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
 ):
     new_purchase = Purchase(
         quantity=purchase.quantity,
@@ -154,19 +175,18 @@ def create_purchase(
 # Dashboard
 
 
-@app.get("/dashboard/spp", response_model=List[SalePerProductMap])
-def get_sales_per_product(
-    db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
-):
+@app.get("/dashboard/spp", response_model=List[SalesPerProductOut])
+def get_sales_per_product(db: Session = Depends(get_db),
+                          # current_user: User = Depends(get_current_user),
+                          ):
+
     sales_data = db.execute(
         select(
-            SalesDetails.product_id,  # ✅ ORM model
+            SalesDetails.product_id,
             Product.name.label("product_name"),
             func.sum(SalesDetails.quantity).label("total_quantity_sold"),
-            func.sum(
-                SalesDetails.quantity * Product.selling_price
-            ).label("total_sales_amount")
+            func.sum(SalesDetails.quantity *
+                     Product.selling_price).label("total_sales_amount")
         )
         .join(Product, SalesDetails.product_id == Product.id)
         .join(Sale, SalesDetails.sale_id == Sale.id)
@@ -174,25 +194,26 @@ def get_sales_per_product(
     ).all()
 
     return [
-        SalePerProductMap(
+        SalesPerProductOut(
             product_id=row.product_id,
             product_name=row.product_name,
-            total_quantity_sold=row.total_quantity_sold,
-            total_sales_amount=row.total_sales_amount,
+            total_quantity_sold=int(row.total_quantity_sold or 0),
+            total_sales_amount=float(row.total_sales_amount or 0),
         )
         for row in sales_data
     ]
 
 
-@app.get("/dashboard/rpp", response_model=List[SalePerProductMap])
-def get_remaining_per_product(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
+@app.get("/dashboard/rpp", response_model=List[RemainingPerProductOut])
+def get_remaining_per_product(db: Session = Depends(get_db),
+                              # current_user: User = Depends(get_current_user),
+                              ):
+
     purchased_subq = (
         select(
             Purchase.product_id.label("product_id"),
-            func.sum(Purchase.quantity).label("total_purchased")
+            func.coalesce(func.sum(Purchase.quantity),
+                          0).label("total_purchased"),
         )
         .group_by(Purchase.product_id)
         .subquery()
@@ -200,10 +221,11 @@ def get_remaining_per_product(
 
     sold_subq = (
         select(
-            SaleDetailsItem.product_id.label("product_id"),
-            func.sum(SaleDetailsItem.quantity).label("total_sold")
+            SalesDetails.product_id.label("product_id"),
+            func.coalesce(func.sum(SalesDetails.quantity),
+                          0).label("total_sold"),
         )
-        .group_by(SaleDetailsItem.product_id)
+        .group_by(SalesDetails.product_id)
         .subquery()
     )
 
@@ -214,22 +236,35 @@ def get_remaining_per_product(
             (
                 func.coalesce(purchased_subq.c.total_purchased, 0)
                 - func.coalesce(sold_subq.c.total_sold, 0)
-            ).label("remaining_quantity")
+            ).label("remaining_quantity"),
         )
         .outerjoin(purchased_subq, Product.id == purchased_subq.c.product_id)
         .outerjoin(sold_subq, Product.id == sold_subq.c.product_id)
+        .order_by(Product.id)
     ).all()
 
     return [
-        SalePerProductMap(
+        RemainingPerProductOut(
             product_id=row.product_id,
             product_name=row.product_name,
-            total_quantity_sold=row.remaining_quantity,
-            total_sales_amount=0,  # not applicable here
+            remaining_quantity=int(row.remaining_quantity or 0),
         )
         for row in data
     ]
 
+
+@app.get("/dashboard/ppp", response_model=List[ProfitPerProduct])
+def get_profit_per_product(db: Session = Depends(get_db),
+                           # current_user: User = Depends(get_current_user),
+                           ):
+    pass
+
+
+@app.get("/dashboard/ppd", response_model=List[ProfitPerDay])
+def get_profit_per_day(db: Session = Depends(get_db),
+                       # current_user: User = Depends(get_current_user),
+                       ):
+    pass
 
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
 # @router.post("/token", tags=["auth"])
