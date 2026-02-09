@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, cast, Date
@@ -29,11 +30,28 @@ from myjwt import (
     get_current_user,
 )
 
+
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5500",  # Live Server 
+        "http://localhost:5500",
+        "http://127.0.0.1:5173",  # Vite 
+        "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create tables on startup
+
+
 @app.on_event("startup")
 def create_tables():
     Base.metadata.create_all(bind=engine)
