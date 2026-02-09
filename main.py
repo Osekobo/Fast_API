@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, Date
 from datetime import timedelta
 from models import Base, engine, Product, Sale, User, Purchase, SalesDetails
 from typing import List
@@ -98,7 +98,7 @@ def get_users(
 @app.get("/products", response_model=list[ProductGetMap])
 def get_products(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
 ):
     return db.scalars(select(Product)).all()
 
@@ -257,14 +257,65 @@ def get_remaining_per_product(db: Session = Depends(get_db),
 def get_profit_per_product(db: Session = Depends(get_db),
                            # current_user: User = Depends(get_current_user),
                            ):
-    pass
+    rows = db.execute(
+        select(
+            Product.id.label("product_id"),
+            Product.name.label("product_name"),
+            func.coalesce(func.sum(SalesDetails.quantity),
+                          0).label("total_quantity_sold"),
+            func.coalesce(
+                func.sum(SalesDetails.quantity * Product.selling_price),
+                0
+            ).label("total_revenue"),
+            func.coalesce(
+                func.sum(SalesDetails.quantity * Product.buying_price),
+                0
+            ).label("total_cost"),
+        )
+        .outerjoin(SalesDetails, SalesDetails.product_id == Product.id)
+        .group_by(Product.id, Product.name)
+        .order_by(Product.id)
+    ).all()
+    return [
+        ProfitPerProduct(
+            product_id=r.product_id,
+            product_name=r.product_name,
+            total_quantity_sold=int(r.total_quantity_sold),
+            total_revenue=float(r.total_revenue),
+            total_profit=float(r.total_revenue - r.total_cost),
+        )
+        for r in rows
+    ]
 
 
 @app.get("/dashboard/ppd", response_model=List[ProfitPerDay])
 def get_profit_per_day(db: Session = Depends(get_db),
                        # current_user: User = Depends(get_current_user),
                        ):
-    pass
+    rows = db.execute(
+        select(
+            cast(Sale.created_at, Date).label("date"),
+
+            func.coalesce(
+                func.sum(
+                    SalesDetails.quantity *
+                    (Product.selling_price - Product.buying_price)
+                ),
+                0
+            ).label("total_profit"),
+        )
+        .join(SalesDetails, SalesDetails.sale_id == Sale.id)
+        .join(Product, Product.id == SalesDetails.product_id)
+        .group_by(cast(Sale.created_at, Date))
+        .order_by(cast(Sale.created_at, Date))
+    ).all()
+    return [
+        ProfitPerDay(
+            date=row.date,
+            total_profit=float(row.total_profit),
+        )
+        for row in rows
+    ]
 
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
 # @router.post("/token", tags=["auth"])

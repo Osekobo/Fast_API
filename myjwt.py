@@ -25,6 +25,8 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 # Database dependency
+
+
 def get_db():
     db = SessionLocal()
     try:

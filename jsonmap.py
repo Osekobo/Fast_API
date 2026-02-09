@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from datetime import datetime
+from datetime import datetime, date
 
 
 class UserPostRegister(BaseModel):
@@ -86,21 +86,18 @@ class RemainingPerProductOut(BaseModel):
     product_name: str
     remaining_quantity: int
 
-########################
-
 
 class ProfitPerProduct(BaseModel):
     product_id: int
     product_name: str
-    remaining_quantity: int
-
-########################
+    total_quantity_sold: int
+    total_revenue: float
+    total_profit: float
 
 
 class ProfitPerDay(BaseModel):
-    product_id: int
-    product_name: str
-    remaining_quantity: int
+    date: date
+    total_profit: float
 
 
 class Token(BaseModel):
