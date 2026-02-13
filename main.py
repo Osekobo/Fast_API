@@ -7,6 +7,7 @@ from models import Base, engine, Product, Sale, User, Purchase, SalesDetails
 from typing import List
 from jsonmap import (
     ProductGetMap,
+    ProductPostMap,
     SaleGetMap,
     SalePostMap,
     UserGetRegister,
@@ -37,12 +38,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://127.0.0.1:5500",  # Live Server 
-        "http://localhost:5500",
-        "http://127.0.0.1:5173",  # Vite 
-        "http://localhost:5173",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
+        # "http://127.0.0.1:5500",
+        # "http://localhost:5500",
+        # "http://127.0.0.1:5173",
+        # "http://localhost:5173",
+        # "http://127.0.0.1:8000",
+        # "http://localhost:8000",
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -122,7 +124,7 @@ def get_products(
 
 
 @app.post("/products", response_model=ProductGetMap)
-def create_product(product: ProductGetMap,
+def create_product(product: ProductPostMap,
                    db: Session = Depends(get_db),
                    #    current_user: User = Depends(get_current_user),
                    ):

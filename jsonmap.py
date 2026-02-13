@@ -52,6 +52,8 @@ class SalePostMap(BaseModel):
 
 class SaleGetMap(SalePostMap):
     id: int
+    created_at: datetime
+    updated_at: datetime
 
 
 class SalePerProductMap(BaseModel):
