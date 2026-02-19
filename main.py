@@ -350,3 +350,4 @@ def get_profit_per_day(db: Session = Depends(get_db),
 #         "token_type": "bearer",
 #     }
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+# git remote git remote -v
