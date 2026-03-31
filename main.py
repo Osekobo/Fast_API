@@ -1,5 +1,5 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, cast, Date
 from datetime import timedelta
@@ -35,21 +35,33 @@ from myjwt import (
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+origins = [
+    "http://localhost:5173",  # React app
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        # "http://127.0.0.1:5500",
-        # "http://localhost:5500",
-        # "http://127.0.0.1:5173",
-        # "http://localhost:5173",
-        # "http://127.0.0.1:8000",
-        # "http://localhost:8000",
-        "*"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# app.add_middleware(
+# CORSMiddleware,
+# allow_origins=origins
+# allow_origins=[
+# "http://127.0.0.1:5500",
+# "http://localhost:5500",
+# "http://127.0.0.1:5173",
+# "http://localhost:5173",
+# "http://127.0.0.1:8000",
+# "http://localhost:8000",
+# origins
+# ],
+# allow_credentials=True,
+# allow_methods=["*"],
+# allow_headers=["*"],
+# )
 
 # Create tables on startup
 
@@ -89,7 +101,7 @@ def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
 
 
 @app.post("/login", response_model=Token)
-def login_user(user: UserPostLogin, db: Session = Depends(get_db)):
+def login_user(user: UserPostLogin, response: Response, db: Session = Depends(get_db)):
     db_user = db.scalar(select(User).where(User.email == user.email))
     if not db_user or not verify_password(user.password, db_user.password):
         raise HTTPException(
@@ -101,11 +113,30 @@ def login_user(user: UserPostLogin, db: Session = Depends(get_db)):
         data={"sub": db_user.email},
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
-
+    # return Token(access_token=access_token, token_type="bearer")
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax"
+    )
     return Token(access_token=access_token, token_type="bearer")
 
 
-# Users
+@app.post("/me")
+def read_me(current_user: User = Depends(get_current_user)):
+    print(current_user.email)
+    return {"email": current_user.email}
+
+
+@app.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token", httponly=True, secure=False, samesite="lax")
+    return {"message": "Logout successful"}
+
+
 @app.get("/users", response_model=list[UserGetRegister])
 def get_users(
     db: Session = Depends(get_db),
@@ -118,7 +149,7 @@ def get_users(
 @app.get("/products", response_model=list[ProductGetMap])
 def get_products(
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     return db.scalars(select(Product)).all()
 
@@ -351,3 +382,4 @@ def get_profit_per_day(db: Session = Depends(get_db),
 #     }
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 # git remote git remote -v
+# uvicorn main:app --reload

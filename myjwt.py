@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 import jwt
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Security, status, Request
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
@@ -59,19 +59,25 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(
-    security_scopes: SecurityScopes,
-    token: str = Depends(oauth2_scheme),
+        request: Request,
+    # security_scopes: SecurityScopes,
+    # token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
-    authenticate_value = "Bearer"
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    # authenticate_value = "Bearer"
+    # if security_scopes.scopes:
+    #     authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": authenticate_value},
+        # headers={"WWW-Authenticate": authenticate_value},
     )
+    token = request.cookies.get("access_token")
+    print(token)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="No token in cookie")
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -79,23 +85,24 @@ async def get_current_user(
         if email is None:
             raise credentials_exception
 
-        scope_str: str = payload.get("scope", "")
-        token_scopes = scope_str.split()
-
-        token_data = TokenData(username=email, scopes=token_scopes)
+        # scope_str: str = payload.get("scope", "")
+        # token_scopes = scope_str.split()
+        # token_data = TokenData(username=email, scopes=token_scopes)
     except (InvalidTokenError, ValidationError):
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
 
-    user = get_user_by_email(db, token_data.username)
+    user = get_user_by_email(db, email)
     if user is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    for scope in security_scopes.scopes:
-        if scope not in token_data.scopes:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not enough permissions",
-                headers={"WWW-Authenticate": authenticate_value},
-            )
+    # for scope in security_scopes.scopes:
+    #     if scope not in token_data.scopes:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_401_UNAUTHORIZED,
+    #             detail="Not enough permissions",
+    #             headers={"WWW-Authenticate": authenticate_value},
+    #         )
 
     return user

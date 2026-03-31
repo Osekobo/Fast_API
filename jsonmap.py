@@ -29,6 +29,7 @@ class ProductPostMap(BaseModel):
     year: int
     condition: str
     fuel: str
+    # created_at: str
 
 
 class ProductGetMap(ProductPostMap):
