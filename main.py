@@ -100,7 +100,8 @@ def register_user(user: UserPostRegister, db: Session = Depends(get_db)):
 # Login
 
 
-@app.post("/login", response_model=Token)
+# @app.post("/login", response_model=Token)
+@app.post("/login")
 def login_user(user: UserPostLogin, response: Response, db: Session = Depends(get_db)):
     db_user = db.scalar(select(User).where(User.email == user.email))
     if not db_user or not verify_password(user.password, db_user.password):
@@ -121,10 +122,11 @@ def login_user(user: UserPostLogin, response: Response, db: Session = Depends(ge
         secure=False,
         samesite="lax"
     )
-    return Token(access_token=access_token, token_type="bearer")
+    # return Token(access_token=access_token, token_type="bearer")
+    return {"message": "Login successful"}
 
 
-@app.post("/me")
+@app.get("/me")
 def read_me(current_user: User = Depends(get_current_user)):
     print(current_user.email)
     return {"email": current_user.email}
@@ -140,7 +142,7 @@ def logout(response: Response):
 @app.get("/users", response_model=list[UserGetRegister])
 def get_users(
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     return db.scalars(select(User)).all()
 
@@ -157,7 +159,7 @@ def get_products(
 @app.post("/products", response_model=ProductGetMap)
 def create_product(product: ProductPostMap,
                    db: Session = Depends(get_db),
-                   #    current_user: User = Depends(get_current_user),
+                      current_user: User = Depends(get_current_user),
                    ):
     model = Product(**product.dict())
     db.add(model)

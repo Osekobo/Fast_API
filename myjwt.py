@@ -81,6 +81,8 @@ async def get_current_user(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("PAYLOAD:", payload)
+
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -88,9 +90,12 @@ async def get_current_user(
         # scope_str: str = payload.get("scope", "")
         # token_scopes = scope_str.split()
         # token_data = TokenData(username=email, scopes=token_scopes)
-    except (InvalidTokenError, ValidationError):
+    except Exception as e:
+        print("JWT ERROR:", e)  # ✅ ADD THIS
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)  # ✅ show real error
+        )
 
     user = get_user_by_email(db, email)
     if user is None:
