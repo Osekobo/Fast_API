@@ -159,7 +159,7 @@ def get_products(
 @app.post("/products", response_model=ProductGetMap)
 def create_product(product: ProductPostMap,
                    db: Session = Depends(get_db),
-                      current_user: User = Depends(get_current_user),
+                   current_user: User = Depends(get_current_user),
                    ):
     model = Product(**product.dict())
     db.add(model)
@@ -172,7 +172,7 @@ def create_product(product: ProductPostMap,
 @app.get("/sales", response_model=list[SaleGetMap])
 def get_sales(
         db: Session = Depends(get_db),
-        # current_user: User = Depends(get_current_user),
+        current_user: User = Depends(get_current_user),
 ):
     return db.scalars(select(Sale)).all()
 
@@ -181,7 +181,7 @@ def get_sales(
 def create_sale(
     sale: SalePostMap,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     model = Sale()
 
@@ -203,7 +203,7 @@ def create_sale(
 @app.get("/purchase", response_model=list[PurchaseGetMap])
 def get_purchases(
         db: Session = Depends(get_db),
-        # current_user: User = Depends(get_current_user),
+        current_user: User = Depends(get_current_user),
 ):
     return db.scalars(select(Purchase)).all()
 
@@ -212,7 +212,7 @@ def get_purchases(
 def create_purchase(
     purchase: PurchasePostMap,
     db: Session = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     new_purchase = Purchase(
         quantity=purchase.quantity,
@@ -370,13 +370,16 @@ def get_profit_per_day(db: Session = Depends(get_db),
         for row in rows
     ]
 
+
+@app.post("/stk-push")
+
+@app.post("/stk-call-back")
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
 # @router.post("/token", tags=["auth"])
 # def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
 #     user = authenticate_user(form_data.username, form_data.password)
 #     if not user:
 #         raise HTTPException(status_code=401, detail="Invalid credentials")
-
 #     token = create_access_token(user.email)
 #     return {
 #         "access_token": token,
