@@ -3,11 +3,11 @@ from datetime import datetime
 import requests
 import base64
 import math
-import time
-import os
-from dotenv import load_dotenv
+# import time
+# import os
+# from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 # consumer_key = os.getenv("consumer_key")
 # consumer_secret = os.getenv("consumer_secret")
@@ -17,11 +17,12 @@ load_dotenv()
 
 consumer_key = "kIM7nhs5kDq6YfzbN15kl2LMOX7zlEZ8lZAiA2lM9I0SKcIe"
 consumer_secret = "cOByOXYGzn7CAQtjNWTZH71XwKV9c777ssXbaJbrmngzUMAkLY2uNkGvaLW4qU5o"
+
 saf_stk_push_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
 saf_api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
 short_code = "174379"
 pass_key = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
-my_callback_url = "https://nonobligatory-microseismic-bernardo.ngrok-free.dev"
+my_callback_url = "https://nonobligatory-microseismic-bernardo.ngrok-free.dev/stk-call-back"
 
 # time will be sent to stk push
 # the request is for  dending http like loads
@@ -80,7 +81,7 @@ def make_stk_push(payload):
         "PartyB": short_code,
         "PhoneNumber": phone_number,
         "CallBackURL": my_callback_url,
-        "AccountReference": "Whatever you call your app",
+        "AccountReference": payload['sale_id'],
         "TransactionDesc": "description of the transaction",
     }
     response = requests.post(
@@ -93,5 +94,6 @@ def make_stk_push(payload):
     return response_data
 
 
-c = make_stk_push({"amount": "1", "phone_number": "254714391137"})
+c = make_stk_push(
+    {"amount": "1", "phone_number": "254714391137", "sale_id": "SALE001"})
 print(c)

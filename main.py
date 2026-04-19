@@ -30,7 +30,8 @@ from myjwt import (
     create_access_token,
     get_current_user,
 )
-
+from mpesa import get_mpesa_access_token, generate_password, make_stk_push
+from fastapi import APIRouter
 
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -371,9 +372,23 @@ def get_profit_per_day(db: Session = Depends(get_db),
     ]
 
 
+# router = APIRouter(tags=["mpesa"])
+
+
 @app.post("/stk-push")
+def stk_push(payload: dict):
+    try:
+        return make_stk_push(payload)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))from e
+
 
 @app.post("/stk-call-back")
+def stk_call_back(payload: dict):
+    print("STK Callback received")
+    return {"message": "Callback received"}
+
+
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
 # @router.post("/token", tags=["auth"])
 # def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
