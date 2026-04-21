@@ -94,6 +94,6 @@ def make_stk_push(payload):
     return response_data
 
 
-c = make_stk_push(
-    {"amount": "1", "phone_number": "254714391137", "sale_id": "SALE001"})
-print(c)
+# c = make_stk_push(
+#     {"amount": "1", "phone_number": "254714391137", "sale_id": "SALE001"})
+# print(c)

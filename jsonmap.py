@@ -111,3 +111,16 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
     scopes: list[str] = []
+
+class PaymentResponse(BaseModel):
+    id: int
+    sale_id: str
+    merchant_request_id: str
+    checkout_request_id: str
+    trans_code: str | None
+    trans_amount: float | None
+    phone_paid: str | None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

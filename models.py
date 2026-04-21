@@ -1,3 +1,5 @@
+from sqlalchemy import Column, Integer, String, DateTime, Float
+# from database import Base
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from sqlalchemy import String, Float, Integer, DateTime, create_engine
 from typing import List
@@ -123,3 +125,15 @@ class User(Base):
         DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True)
+    sale_id = Column(String)
+    merchant_request_id = Column(String)
+    checkout_request_id = Column(String)
+    trans_code = Column(String, nullable=True)
+    trans_amount = Column(Float, nullable=True)
+    phone_paid = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

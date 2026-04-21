@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, cast, Date
 from datetime import timedelta
-from models import Base, engine, Product, Sale, User, Purchase, SalesDetails
+from models import Base, engine, Product, Sale, User, Purchase, SalesDetails, Payment
 from typing import List
 from jsonmap import (
     ProductGetMap,
@@ -22,6 +22,7 @@ from jsonmap import (
     ProfitPerProduct,
     ProfitPerDay,
     Token,
+    PaymentResponse
 )
 from myjwt import (
     get_db,
@@ -376,19 +377,48 @@ def get_profit_per_day(db: Session = Depends(get_db),
 
 
 @app.post("/stk-push")
-def stk_push(payload: dict):
+def stk_push(payload: dict, db: Session = Depends(get_db)):
     try:
-        return make_stk_push(payload)
+        response = make_stk_push(payload)
+        payment = Payment(
+            sale_id=payload["sale_id"],
+            merchant_request_id=response.get("MerchantRequestID"),
+            checkout_request_id=response.get("CheckoutRequestID"),
+        )
+        db.add(payment)
+        db.commit()
+        db.refresh(payment)
+        return response
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))from e
 
 
 @app.post("/stk-call-back")
-def stk_call_back(payload: dict):
-    print("STK Callback received")
+def stk_call_back(payload: dict, db: Session = Depends(get_db)):
+    print("STK Callback received", payload)
+    stk = payload.get("Body", {}).get("stkCallback", {})
+    checkout_id = stk.get("CheckoutRequestID")
+    items = stk.get("CallbackMetadata", {}).get("Item", [])
+    data = {item["Name"]: item.get("Value") for item in items}
+    payment = db.query(Payment).filter_by(
+        checkout_request_id=checkout_id
+    ).first()
+    if payment:
+        payment.trans_code = data.get("MpesaReceiptNumber")
+        payment.trans_amount = data.get("Amount")
+        payment.phone_paid = str(data.get("PhoneNumber"))
+        db.commit()
     return {"message": "Callback received"}
 
 
+@app.get("/payments", response_model=List[PaymentResponse])
+def get_all_payments(db: Session = Depends(get_db)):
+    return db.query(Payment).all()
+
+    # store
+    # Payment id,sale_id,trans_code,trans_amount,phone_paid,created_at
+    # {'MerchantRequestID': 'd151-4366-a249-8724e4cf36575798', 'CheckoutRequestID': 'ws_CO_20042026095934009714391137', 'ResponseCode': '0',
+    #     'ResponseDescription': 'Success. Request accepted for processing', 'CustomerMessage': 'Success. Request accepted for processing'}
 # ---------------- LOGIN (OAUTH2 – SWAGGER) ----------------
 # @router.post("/token", tags=["auth"])
 # def login_token(form_data: OAuth2PasswordRequestForm = Depends()):
