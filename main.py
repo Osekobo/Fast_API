@@ -66,11 +66,12 @@ app.add_middleware(
 # )
 
 # Create tables on startup
-
+Base.metadata.create_all(bind=engine)
 
 @app.on_event("startup")
 def create_tables():
     Base.metadata.create_all(bind=engine)
+    # Base.metadata.drop_all(bind=engine)
 
 
 @app.get("/")
@@ -125,7 +126,13 @@ def login_user(user: UserPostLogin, response: Response, db: Session = Depends(ge
         samesite="lax"
     )
     # return Token(access_token=access_token, token_type="bearer")
-    return {"message": "Login successful"}
+    return {
+        "message": "Login successful",
+        "user": {
+            "email": db_user.email,
+            "name": db_user.name
+        }
+    }
 
 
 @app.get("/me")
@@ -220,11 +227,9 @@ def create_purchase(
         quantity=purchase.quantity,
         product_id=purchase.product_id
     )
-
     db.add(new_purchase)
     db.commit()
     db.refresh(new_purchase)
-
     return new_purchase
 
 # Dashboard
@@ -384,6 +389,8 @@ def stk_push(payload: dict, db: Session = Depends(get_db)):
             sale_id=payload["sale_id"],
             merchant_request_id=response.get("MerchantRequestID"),
             checkout_request_id=response.get("CheckoutRequestID"),
+            phone_paid=payload["phone_number"],
+            trans_amount=payload["amount"]
         )
         db.add(payment)
         db.commit()
@@ -396,17 +403,13 @@ def stk_push(payload: dict, db: Session = Depends(get_db)):
 @app.post("/stk-call-back")
 def stk_call_back(payload: dict, db: Session = Depends(get_db)):
     print("STK Callback received", payload)
-    stk = payload.get("Body", {}).get("stkCallback", {})
-    checkout_id = stk.get("CheckoutRequestID")
-    items = stk.get("CallbackMetadata", {}).get("Item", [])
-    data = {item["Name"]: item.get("Value") for item in items}
+
     payment = db.query(Payment).filter_by(
-        checkout_request_id=checkout_id
+        checkout_request_id=payload["Body"]["stkCallback"]["CheckoutRequestID"]
     ).first()
-    if payment:
-        payment.trans_code = data.get("MpesaReceiptNumber")
-        payment.trans_amount = data.get("Amount")
-        payment.phone_paid = str(data.get("PhoneNumber"))
+    # data['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
+    if  int(payload['Body']['stkCallback']['ResultCode']) == 0:
+        payment.trans_code = payload['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
         db.commit()
     return {"message": "Callback received"}
 
@@ -433,3 +436,15 @@ def get_all_payments(db: Session = Depends(get_db)):
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 # git remote git remote -v
 # uvicorn main:app --reload
+
+
+# if  int(data['Body']['stkCallback']['ResultCode'])==0:
+#         # update payment record with transaction code,transaction amount and status
+#         existing_payment.trans_code = data['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
+#         existing_payment.status="Success"
+
+#     else:
+#         existing_payment.status="Failed"
+#         my_session.commit()
+
+#     return jsonify({"message": "callback received"}), 200
