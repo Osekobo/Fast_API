@@ -33,6 +33,7 @@ from myjwt import (
 )
 from mpesa import get_mpesa_access_token, generate_password, make_stk_push
 from fastapi import APIRouter
+from generate_pdf import generate_pdf
 
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -411,7 +412,15 @@ def stk_call_back(payload: dict, db: Session = Depends(get_db)):
     if  int(payload['Body']['stkCallback']['ResultCode']) == 0:
         payment.trans_code = payload['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
         db.commit()
-    return {"message": "Callback received"}
+        payment.status = "Success"
+        # now generate pdf
+        text="Payment Receipt\n\nTransacton Code"+payload['Body']['stkCallback']['CallbackMetadata']
+        ['Item'][1]['Value']+"\n"+"Amount Paid:"+payment.trans_amount+"\n"+"Date:"+payload.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        generate_pdf(text,payload['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value'])
+    # return {"message": "Callback received"}
+    else:
+        payment.status = "Failed"
+        db.commit()
 
 
 @app.get("/payments", response_model=List[PaymentResponse])
