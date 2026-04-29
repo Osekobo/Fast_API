@@ -12,9 +12,9 @@ cloudinary.config(
 
 
 def upload_pdf(pdf_file):
-    res = cloudinary.uploader.upload(f"receipts/{pdf_file}.pdf")
+    res = cloudinary.uploader.upload(f"receipts/{pdf_file}.jpg")
     print(res["secure_url"])
     return "success"
 
 
-upload_pdf("myimage")
+print(upload_pdf("myimage"))

@@ -22,6 +22,7 @@ saf_stk_push_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequ
 saf_api_url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
 short_code = "174379"
 pass_key = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+# my_callback_url = "https://nonobligatory-microseismic-bernardo.ngrok-free.dev/stk-call-back"
 my_callback_url = "https://nonobligatory-microseismic-bernardo.ngrok-free.dev/stk-call-back"
 
 # time will be sent to stk push

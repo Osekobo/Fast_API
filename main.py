@@ -69,6 +69,7 @@ app.add_middleware(
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
 
+
 @app.on_event("startup")
 def create_tables():
     Base.metadata.create_all(bind=engine)
@@ -405,22 +406,36 @@ def stk_push(payload: dict, db: Session = Depends(get_db)):
 def stk_call_back(payload: dict, db: Session = Depends(get_db)):
     print("STK Callback received", payload)
 
+    callback = payload.get("Body", {}).get("stkCallback", {})
+
     payment = db.query(Payment).filter_by(
-        checkout_request_id=payload["Body"]["stkCallback"]["CheckoutRequestID"]
+        checkout_request_id=callback.get("CheckoutRequestID")
     ).first()
     # data['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
-    if  int(payload['Body']['stkCallback']['ResultCode']) == 0:
-        payment.trans_code = payload['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value']
-        db.commit()
+    if int(callback.get("ResultCode")) == 0:
+        items = callback.get("CallbackMetadata", {}).get("Item", [])
+        data = {item.get("Name"): item.get("Value") for item in items}
+
+        receipt = data.get("MpesaReceiptNumber")
+        amount = data.get("Amount")
+
+        payment.trans_code = receipt
+        payment.trans_amount = amount
         payment.status = "Success"
+        db.commit()
         # now generate pdf
-        text="Payment Receipt\n\nTransacton Code"+payload['Body']['stkCallback']['CallbackMetadata']
-        ['Item'][1]['Value']+"\n"+"Amount Paid:"+payment.trans_amount+"\n"+"Date:"+payload.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        generate_pdf(text,payload['Body']['stkCallback']['CallbackMetadata']['Item'][1]['Value'])
+        text = f"""
+Payment Receipt
+Transaction Code: {receipt}
+Amount Paid: {amount}
+"""
+
+        generate_pdf(text, receipt)
     # return {"message": "Callback received"}
     else:
         payment.status = "Failed"
         db.commit()
+    return {"message": "Callback received"}
 
 
 @app.get("/payments", response_model=List[PaymentResponse])
