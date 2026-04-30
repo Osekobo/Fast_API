@@ -1,3 +1,4 @@
+from send_email import email
 import cloudinary
 import cloudinary.uploader
 CLOUDINARY_URL = "dayygto4l"
@@ -12,9 +13,13 @@ cloudinary.config(
 
 
 def upload_pdf(pdf_file):
-    res = cloudinary.uploader.upload(f"receipts/{pdf_file}.jpg")
+    res = cloudinary.uploader.upload(f"receipts/{pdf_file}.pdf")
+    # res = cloudinary.uploader.upload(f"receipts/{pdf_file}.jpg")
     print(res["secure_url"])
+    m = f"Hello, thank you we have received your payment.Click on the link below to find your receipt {res['secure_url']}"
+    email("collinsboseko2005@gmail.com", "Payment Received", m)
     return "success"
 
 
-print(upload_pdf("myimage"))
+# print(upload_pdf("UDTHA2HCSG"))
+# print(upload_pdf("myimage"))

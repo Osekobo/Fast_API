@@ -34,6 +34,7 @@ from myjwt import (
 from mpesa import get_mpesa_access_token, generate_password, make_stk_push
 from fastapi import APIRouter
 from generate_pdf import generate_pdf
+from cloudinary_upload import upload_pdf
 
 app = FastAPI()
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -429,9 +430,8 @@ Payment Receipt
 Transaction Code: {receipt}
 Amount Paid: {amount}
 """
-
         generate_pdf(text, receipt)
-    # return {"message": "Callback received"}
+        return {"message": "Callback received"}
     else:
         payment.status = "Failed"
         db.commit()

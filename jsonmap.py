@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime, date
+from typing import Optional
 
 
 class UserPostRegister(BaseModel):
@@ -115,8 +116,8 @@ class TokenData(BaseModel):
 class PaymentResponse(BaseModel):
     id: int
     sale_id: str
-    merchant_request_id: str
-    checkout_request_id: str
+    merchant_request_id: Optional[str]=None
+    checkout_request_id: Optional[str]=None
     trans_code: str | None
     trans_amount: float | None
     phone_paid: str | None
